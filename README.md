@@ -282,3 +282,5 @@ interface IBuyer {
 `getProducts(): Promise<IProductsResponse>` - выполняет GET-запрос на эндпоинт `/product/` и возвращает объект с массивом товаров.
 
 `postOrder(order: IOrder): Promise<IOrderResult>` - выполняет POST-запрос на эндпоинт `/order/`, отправляет данные заказа и возвращает результат оформления заказа.
+
+https://github.com/HlebnikS/weblarek
