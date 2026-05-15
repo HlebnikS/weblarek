@@ -1,13 +1,13 @@
 import "./scss/styles.scss";
 import { apiProducts } from "./utils/data";
 
-import { ProductCatalog } from "./components/base/models/ProductCatalog";
-import { Basket } from "./components/base/models/Basket";
-import { Buyer } from "./components/base/models/Buyer";
+import { ProductCatalog } from "./components/models/ProductCatalog";
+import { Basket } from "./components/models/Basket";
+import { Buyer } from "./components/models/Buyer";
 
 import { Api } from "./components/base/Api";
 import { API_URL } from "./utils/constants";
-import { WebLarekApi } from "./components/base/models/WebLarekApi";
+import { WebLarekApi } from "./components/Api/WebLarekApi";
 
 // Создание экземпляров классов
 const catalog = new ProductCatalog();

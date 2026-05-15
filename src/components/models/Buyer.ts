@@ -1,4 +1,5 @@
-import { IBuyer } from "../../../types/index";
+import { IBuyer } from "../../types/index";
+import { TFormErrors } from "../../types/index";
 
 export class Buyer {
   protected payment: IBuyer["payment"] = "";
@@ -26,13 +27,24 @@ export class Buyer {
     this.address = "";
   }
 
-  validate(): Partial<Record<keyof IBuyer, string>> {
+  validate(): TFormErrors {
     const errors: Partial<Record<keyof IBuyer, string>> = {};
 
-    if (!this.payment) errors.payment = "Не выбран способ оплаты";
-    if (!this.email) errors.email = "Укажите email";
-    if (!this.phone) errors.phone = "Укажите телефон";
-    if (!this.address) errors.address = "Укажите адрес";
+    if (!this.payment) {
+      errors.payment = "Не выбран способ оплаты";
+    }
+
+    if (!this.email.trim()) {
+      errors.email = "Укажите email";
+    }
+
+    if (!this.phone.trim()) {
+      errors.phone = "Укажите телефон";
+    }
+
+    if (!this.address.trim()) {
+      errors.address = "Укажите адрес";
+    }
 
     return errors;
   }

@@ -39,3 +39,5 @@ export interface IOrderResult {
   id: string;
   total: number;
 }
+
+export type TFormErrors = Partial<Record<keyof IBuyer, string>>;
