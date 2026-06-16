@@ -17,7 +17,7 @@ export interface IProduct {
   price: number | null;
 }
 
-type TPayment = "card" | "cash" | "";
+export type TPayment = "card" | "cash" | "";
 export interface IBuyer {
   payment: TPayment;
   email: string;
@@ -41,3 +41,90 @@ export interface IOrderResult {
 }
 
 export type TFormErrors = Partial<Record<keyof IBuyer, string>>;
+
+export interface IHeaderData {
+  counter: number;
+}
+
+export interface IGalleryData {
+  catalog: HTMLElement[];
+}
+
+export interface IModalData {
+  content: HTMLElement;
+}
+
+export interface ICardData {
+  id: string;
+  title: string;
+  price: number | null;
+}
+
+export interface ICardData {
+  id: string;
+  title: string;
+  price: number | null;
+}
+
+export interface ICatalogCardData extends ICardData {
+  category: string;
+  image: string;
+}
+export interface ICardActions {
+  onClick?: (event: MouseEvent) => void;
+}
+
+export interface IPreviewCardData extends ICatalogCardData {
+  description: string;
+  selected: boolean;
+}
+
+export interface IBasketCardData extends ICardData {
+  index: number;
+}
+
+export interface IBasketViewData {
+  items: HTMLElement[];
+  total: number;
+}
+
+export interface IFormState {
+  valid: boolean;
+  errors: string;
+}
+
+export interface IFormFieldChange<T> {
+  field: keyof T;
+  value: string;
+}
+
+export interface IOrderFormData {
+  payment: TPayment | null;
+  address: string;
+}
+
+export interface IContactsFormData {
+  email: string;
+  phone: string;
+}
+
+export interface ISuccessData {
+  total: number;
+}
+
+export interface ISuccessActions {
+  onClick?: (event: MouseEvent) => void;
+}
+
+export interface ICardEvent {
+  id: string;
+}
+
+export interface IOrder {
+  payment: TPayment;
+  email: string;
+  phone: string;
+  address: string;
+  total: number;
+  items: string[];
+}
