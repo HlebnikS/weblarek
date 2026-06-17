@@ -11,7 +11,7 @@ import { WebLarekApi } from "./components/Api/WebLarekApi";
 import { EventEmitter } from "./components/base/Events";
 
 import { Gallery } from "./components/view/Gallery";
-import { ensureElement } from "./utils/utils";
+import { ensureElement, cloneTemplate } from "./utils/utils";
 
 import { CatalogCard } from "./components/view/CatalogCard";
 
@@ -23,6 +23,7 @@ import {
   IOrderFormData,
   IContactsFormData,
   TPayment,
+  IOrder,
 } from "./types";
 
 import { Header } from "./components/view/Header";
@@ -33,7 +34,6 @@ import { OrderForm } from "./components/view/OrderForm";
 import { ContactsForm } from "./components/view/ContactsForm";
 
 import { Success } from "./components/view/Success";
-import { IOrder } from "./types/index";
 
 // Брокер событий
 const events = new EventEmitter();
@@ -70,62 +70,51 @@ const contactsTemplate = ensureElement<HTMLTemplateElement>("#contacts");
 const successTemplate = ensureElement<HTMLTemplateElement>("#success");
 
 // Создание подробной карточки
-const previewElement =
-  previewCardTemplate.content.firstElementChild?.cloneNode(true);
-
-if (!(previewElement instanceof HTMLElement)) {
-  throw new Error("Не удалось клонировать шаблон #card-preview");
-}
-
-const previewCard = new PreviewCard(previewElement, {
-  onClick: () => {
-    const product = catalog.getPreview();
-
-    if (!product || product.price === null) {
-      return;
-    }
-
-    if (basket.hasItem(product.id)) {
-      events.emit<ICardEvent>("basket:remove", {
-        id: product.id,
-      });
-    } else {
-      events.emit<ICardEvent>("basket:add", {
-        id: product.id,
-      });
-    }
-  },
-});
+const previewCard = new PreviewCard(
+  events,
+  cloneTemplate<HTMLElement>(previewCardTemplate),
+);
 
 // Создание представления корзины
-const basketElement = basketTemplate.content.firstElementChild?.cloneNode(true);
+const basketView = new BasketView(
+  events,
+  cloneTemplate<HTMLElement>(basketTemplate),
+);
 
-if (!(basketElement instanceof HTMLElement)) {
-  throw new Error("Не удалось клонировать шаблон #basket");
-}
+// Создание формы оплаты и адреса
+const orderForm = new OrderForm(
+  events,
+  cloneTemplate<HTMLFormElement>(orderTemplate),
+);
 
-const basketView = new BasketView(events, basketElement);
+// Создание формы контактов
+const contactsForm = new ContactsForm(
+  events,
+  cloneTemplate<HTMLFormElement>(contactsTemplate),
+);
+
+// Создание компонента успешного заказа
+const success = new Success(cloneTemplate<HTMLElement>(successTemplate), {
+  onClick: () => {
+    modal.close();
+  },
+});
 
 // Функция отображения содержимого корзины
 const renderBasket = (): void => {
   const items = basket.getItems().map((product, index) => {
-    const cardElement =
-      basketCardTemplate.content.firstElementChild?.cloneNode(true);
-
-    if (!(cardElement instanceof HTMLElement)) {
-      throw new Error("Не удалось клонировать шаблон #card-basket");
-    }
-
-    const card = new BasketCard(cardElement, {
-      onClick: () => {
-        events.emit<ICardEvent>("basket:delete", {
-          id: product.id,
-        });
+    const card = new BasketCard(
+      cloneTemplate<HTMLElement>(basketCardTemplate),
+      {
+        onClick: () => {
+          events.emit<ICardEvent>("basket:delete", {
+            id: product.id,
+          });
+        },
       },
-    });
+    );
 
     return card.render({
-      id: product.id,
       index: index + 1,
       title: product.title,
       price: product.price,
@@ -147,23 +136,18 @@ events.on("catalog:changed", () => {
   const products = catalog.getProducts();
 
   const cards = products.map((product) => {
-    const cardElement =
-      catalogCardTemplate.content.firstElementChild?.cloneNode(true);
-
-    if (!(cardElement instanceof HTMLElement)) {
-      throw new Error("Не удалось клонировать шаблон #card-catalog");
-    }
-
-    const card = new CatalogCard(cardElement, {
-      onClick: () => {
-        events.emit<ICardEvent>("card:select", {
-          id: product.id,
-        });
+    const card = new CatalogCard(
+      cloneTemplate<HTMLElement>(catalogCardTemplate),
+      {
+        onClick: () => {
+          events.emit<ICardEvent>("card:select", {
+            id: product.id,
+          });
+        },
       },
-    });
+    );
 
     return card.render({
-      id: product.id,
       title: product.title,
       price: product.price,
       category: product.category,
@@ -195,14 +179,23 @@ events.on("preview:changed", () => {
     return;
   }
 
+  const isSelected = basket.hasItem(product.id);
+  const isUnavailable = product.price === null;
+
+  const buttonText = isUnavailable
+    ? "В корзину"
+    : isSelected
+      ? "Удалить из корзины"
+      : "В корзину";
+
   const previewContent = previewCard.render({
-    id: product.id,
     title: product.title,
     price: product.price,
     category: product.category,
     image: `${CDN_URL}${product.image}`,
     description: product.description,
-    selected: basket.hasItem(product.id),
+    buttonText,
+    buttonDisabled: isUnavailable,
   });
 
   modal.render({
@@ -212,20 +205,21 @@ events.on("preview:changed", () => {
   modal.open();
 });
 
-// Добавление товара в корзину
-events.on<ICardEvent>("basket:add", ({ id }) => {
-  const product = catalog.getProduct(id);
+// Действие с товаром в подробной карточке
+events.on("card:action", () => {
+  const product = catalog.getPreview();
 
   if (!product || product.price === null) {
     return;
   }
 
-  basket.addItem(product);
-});
+  if (basket.hasItem(product.id)) {
+    basket.removeItem(product.id);
+  } else {
+    basket.addItem(product);
+  }
 
-// Удаление товара через подробную карточку
-events.on<ICardEvent>("basket:remove", ({ id }) => {
-  basket.removeItem(id);
+  modal.close();
 });
 
 // Удаление товара из корзины
@@ -236,20 +230,10 @@ events.on<ICardEvent>("basket:delete", ({ id }) => {
 // Изменение содержимого корзины
 events.on("basket:changed", () => {
   renderBasket();
-
-  const product = catalog.getPreview();
-
-  if (product) {
-    previewCard.render({
-      selected: basket.hasItem(product.id),
-    });
-  }
 });
 
 // Открытие корзины
 events.on("basket:open", () => {
-  renderBasket();
-
   modal.render({
     content: basketView.render(),
   });
@@ -257,48 +241,12 @@ events.on("basket:open", () => {
   modal.open();
 });
 
-// Закрытие модального окна
-events.on("modal:close", () => {
-  modal.close();
-});
-
-// Начальное состояние интерфейса
-header.render({
-  counter: 0,
-});
-
-basketView.render({
-  items: [],
-  total: 0,
-});
-
-// Создание формы оплаты и адреса
-const orderElement = orderTemplate.content.firstElementChild?.cloneNode(true);
-if (!(orderElement instanceof HTMLFormElement)) {
-  throw new Error("Не удалось клонировать шаблон #order");
-}
-const orderForm = new OrderForm(events, orderElement);
-
-// Создание формы контактов {
-const contactsElement =
-  contactsTemplate.content.firstElementChild?.cloneNode(true);
-if (!(contactsElement instanceof HTMLFormElement)) {
-  throw new Error("Не удалось клонировать шаблон #contacts");
-}
-
-const contactsForm = new ContactsForm(events, contactsElement);
-
 // Открытие первой формы
 events.on("order:open", () => {
-  const data = buyer.getData();
-  const errors = buyer.validate();
-  orderForm.render({
-    payment: data.payment || null,
-    address: data.address,
-    valid: !errors.payment && !errors.address,
-    errors: [errors.payment, errors.address].filter(Boolean).join("; "),
+  modal.render({
+    content: orderForm.render(),
   });
-  modal.render({ content: orderForm.render() });
+
   modal.open();
 });
 
@@ -306,15 +254,19 @@ events.on("order:open", () => {
 events.on<IFormFieldChange<IOrderFormData>>(
   "order.payment:change",
   ({ value }) => {
-    buyer.setData({ payment: value as TPayment });
+    buyer.setData({
+      payment: value as TPayment,
+    });
   },
 );
 
-// Изменения адреса
+// Изменение адреса
 events.on<IFormFieldChange<IOrderFormData>>(
   "order.address:change",
   ({ value }) => {
-    buyer.setData({ address: value });
+    buyer.setData({
+      address: value,
+    });
   },
 );
 
@@ -322,18 +274,22 @@ events.on<IFormFieldChange<IOrderFormData>>(
 events.on("buyer:changed", () => {
   const data = buyer.getData();
   const errors = buyer.validate();
+
   const orderErrors = [errors.payment, errors.address]
     .filter(Boolean)
     .join("; ");
+
   const contactsErrors = [errors.email, errors.phone]
     .filter(Boolean)
     .join("; ");
+
   orderForm.render({
-    payment: data.payment || null,
+    payment: data.payment,
     address: data.address,
     valid: !errors.payment && !errors.address,
     errors: orderErrors,
   });
+
   contactsForm.render({
     email: data.email,
     phone: data.phone,
@@ -342,27 +298,20 @@ events.on("buyer:changed", () => {
   });
 });
 
-//Открытие второй формы
+// Открытие второй формы
 events.on("order:submit", () => {
-  const errors = buyer.validate();
-  if (errors.payment || errors.address) {
-    return;
-  }
-  const data = buyer.getData();
-  contactsForm.render({
-    email: data.email,
-    phone: data.phone,
-    valid: !errors.email && !errors.phone,
-    errors: [errors.email, errors.phone].filter(Boolean).join("; "),
+  modal.render({
+    content: contactsForm.render(),
   });
-  modal.render({ content: contactsForm.render() });
 });
 
 // Изменение электронной почты
 events.on<IFormFieldChange<IContactsFormData>>(
   "contacts.email:change",
   ({ value }) => {
-    buyer.setData({ email: value });
+    buyer.setData({
+      email: value,
+    });
   },
 );
 
@@ -370,37 +319,15 @@ events.on<IFormFieldChange<IContactsFormData>>(
 events.on<IFormFieldChange<IContactsFormData>>(
   "contacts.phone:change",
   ({ value }) => {
-    buyer.setData({ phone: value });
+    buyer.setData({
+      phone: value,
+    });
   },
 );
 
-// Создание компонент Success
-const successElement =
-  successTemplate.content.firstElementChild?.cloneNode(true);
-
-if (!(successElement instanceof HTMLElement)) {
-  throw new Error("Не удалось клонировать шаблон #success");
-}
-
-const success = new Success(successElement, {
-  onClick: () => {
-    modal.close();
-  },
-});
-
 // Обработка отправки формы контактов
 events.on("contacts:submit", () => {
-  const errors = buyer.validate();
-
-  if (errors.payment || errors.address || errors.email || errors.phone) {
-    return;
-  }
-
   const buyerData = buyer.getData();
-
-  if (buyerData.payment !== "card" && buyerData.payment !== "cash") {
-    return;
-  }
 
   const order: IOrder = {
     payment: buyerData.payment,
@@ -429,6 +356,15 @@ events.on("contacts:submit", () => {
       console.error("Ошибка оформления заказа:", error);
     });
 });
+
+// Закрытие модального окна
+events.on("modal:close", () => {
+  modal.close();
+});
+
+// Начальное состояние интерфейса
+basket.clear();
+buyer.clear();
 
 // Получение товаров с сервера
 webLarekApi

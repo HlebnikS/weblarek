@@ -5,7 +5,7 @@ import { ICardData } from "../../types";
 export abstract class Card<T extends ICardData> extends Component<T> {
   protected titleElement: HTMLElement;
   protected priceElement: HTMLElement;
-  constructor(container: HTMLElement) {
+  protected constructor(container: HTMLElement) {
     super(container);
     this.titleElement = ensureElement<HTMLElement>(
       ".card__title",
@@ -15,9 +15,6 @@ export abstract class Card<T extends ICardData> extends Component<T> {
       ".card__price",
       this.container,
     );
-  }
-  set id(value: string) {
-    this.container.dataset.id = value;
   }
   set title(value: string) {
     this.titleElement.textContent = value;

@@ -1,13 +1,19 @@
+import { categoryMap } from "../utils/constants";
+
+export type CategoryKey = keyof typeof categoryMap;
+
 export type ApiPostMethods = "POST" | "PUT" | "DELETE";
 
 export interface IApi {
   get<T extends object>(uri: string): Promise<T>;
+
   post<T extends object>(
     uri: string,
     data: object,
     method?: ApiPostMethods,
   ): Promise<T>;
 }
+
 export interface IProduct {
   id: string;
   description: string;
@@ -18,6 +24,7 @@ export interface IProduct {
 }
 
 export type TPayment = "card" | "cash" | "";
+
 export interface IBuyer {
   payment: TPayment;
   email: string;
@@ -55,13 +62,6 @@ export interface IModalData {
 }
 
 export interface ICardData {
-  id: string;
-  title: string;
-  price: number | null;
-}
-
-export interface ICardData {
-  id: string;
   title: string;
   price: number | null;
 }
@@ -70,13 +70,15 @@ export interface ICatalogCardData extends ICardData {
   category: string;
   image: string;
 }
+
 export interface ICardActions {
   onClick?: (event: MouseEvent) => void;
 }
 
 export interface IPreviewCardData extends ICatalogCardData {
   description: string;
-  selected: boolean;
+  buttonText: string;
+  buttonDisabled: boolean;
 }
 
 export interface IBasketCardData extends ICardData {
@@ -118,13 +120,4 @@ export interface ISuccessActions {
 
 export interface ICardEvent {
   id: string;
-}
-
-export interface IOrder {
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
-  total: number;
-  items: string[];
 }

@@ -1,9 +1,7 @@
 import { Card } from "./Card";
 import { ensureElement } from "../../utils/utils";
 import { categoryMap } from "../../utils/constants";
-import { ICatalogCardData, ICardActions } from "../../types";
-
-type CategoryKey = keyof typeof categoryMap;
+import { ICatalogCardData, ICardActions, CategoryKey } from "../../types";
 
 export class CatalogCard extends Card<ICatalogCardData> {
   protected imageElement: HTMLImageElement;

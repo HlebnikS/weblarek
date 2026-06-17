@@ -9,7 +9,7 @@ export class Buyer {
   constructor(protected events: IEvents) {}
   setData(data: Partial<IBuyer>): void {
     Object.assign(this, data);
-    this.events.emit("buyer:changed", { data: this.getData() });
+    this.events.emit("buyer:changed");
   }
   getData(): IBuyer {
     return {
@@ -24,7 +24,7 @@ export class Buyer {
     this.email = "";
     this.phone = "";
     this.address = "";
-    this.events.emit("buyer:changed", { data: this.getData() });
+    this.events.emit("buyer:changed");
   }
   validate(): TFormErrors {
     const errors: TFormErrors = {};

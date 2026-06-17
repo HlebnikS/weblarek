@@ -9,10 +9,7 @@ export class ProductCatalog {
 
   setProducts(products: IProduct[]): void {
     this.products = products;
-
-    this.events.emit("catalog:changed", {
-      products: this.products,
-    });
+    this.events.emit("catalog:changed");
   }
 
   getProducts(): IProduct[] {
@@ -25,10 +22,7 @@ export class ProductCatalog {
 
   setPreview(product: IProduct): void {
     this.preview = product;
-
-    this.events.emit("preview:changed", {
-      product: this.preview,
-    });
+    this.events.emit("preview:changed");
   }
 
   getPreview(): IProduct | null {
